@@ -6,14 +6,14 @@ const cloudinary = require('cloudinary').v2;
 
 // 1. Configure Cloudinary
 cloudinary.config({
-  cloud_name: 'dkrsssltc',
-  api_key: '575568288355494',
-  api_secret: '8hxJW5piPGCmLLJpVTca-9PpuO0' 
+    cloud_name: 'dkrssltc',
+    api_key: '575568288355494',
+    api_secret: '8hxJW5piPGcMLLJpVTca-9Ppu00'
 });
 
 app.use(express.json());
 
-// Helper function: Smart word wrapping to prevent mid-word breaking (e.g., pi-oneer)
+// Helper function: Smart word wrapping
 function wrapText(text, maxChars) {
     if (!text) return [];
     const words = text.split(' ');
@@ -41,38 +41,34 @@ app.post('/api/mint-candle', async (req, res) => {
         const dDate = deathDate ? deathDate.slice(0, 10) : "N/A";
 
         // Generate smart-wrapped message lines (Max 10 lines)
-        const charsPerLine = 28; 
+        const charsPerLine = 28;
         const wrappedLines = wrapText(message, charsPerLine).slice(0, 10);
         
         let messageLines = [];
         for (let i = 0; i < wrappedLines.length; i++) {
-            // Soft charcoal color (#1A1A1A) blends much better than harsh pure black
             messageLines.push(`
-                <text x="416" y="${610 + (i * 38)}" 
-                      text-anchor="middle" 
-                      font-family="Arial, sans-serif" 
-                      font-size="26" 
-                      fill="#1A1A1A" 
-                      filter="url(#jar-curve)">${wrappedLines[i]}</text>
+                <text x="416" y="${610 + (i * 38)}"
+                text-anchor="middle"
+                font-family="Arial, sans-serif"
+                font-size="26"
+                fill="#1A1A1A"
+                filter="url(#jar-curve)">${wrappedLines[i]}</text>
             `);
         }
 
         const templatePath = path.join(__dirname, 'candle-template-blank.jpg');
-
-        // Create the SVG overlay with a subtle cylindrical distortion filter
+        
+        // Create the SVG overlay
         const svgOverlay = `
             <svg width="832" height="1248" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <filter id="jar-curve">
-                        <feTurbulence type="fractalNoise" baseFrequency="0.01 0.0" numOctaves="1" result="noise" />
-                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G" />
+                        <feTurbulence type="fractalNoise" baseFrequency="0.01 0.0" numOctaves="1" result="noise"/>
+                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
                     </filter>
                 </defs>
-                
-                <text x="416" y="500" text-anchor="middle" font-family="Arial, sans-serif" font-size="56" fill="#111111" font-weight="bold" filter="url(#jar-curve)">${firstName || ''}</text>
-                
-                <text x="416" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" fill="#222222" font-weight="bold" filter="url(#jar-curve)">${bDate} - ${dDate}</text>
-                
+                <text x="416" y="500" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" fill="#1A1A1A">${firstName}</text>
+                <text x="416" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#1A1A1A">${bDate} - ${dDate}</text>
                 ${messageLines.join('')}
             </svg>`;
 
@@ -92,12 +88,14 @@ app.post('/api/mint-candle', async (req, res) => {
 
         // Send the secure URL back to your Wix site
         res.status(200).json({ success: true, imageUrl: result.secure_url });
-
     } catch (error) {
         console.error("Error:", error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
 
-app.listen(3000, () => console.log("Server running and ready for Cloudinary uploads with text warping!"));
-
+// Use the dynamic port provided by Render, or 3000 locally
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+});
