@@ -4,18 +4,19 @@ const sharp = require('sharp');
 const path = require('path');
 const cloudinary = require('cloudinary').v2;
 
-// 1. Configure Cloudinary
+// Configure Cloudinary using Environment Variables
+// Ensure these keys (CLOUDINARY_NAME, etc.) are set in your Render dashboard
 cloudinary.config({
-    cloud_name: 'dkrssltc',
-    api_key: '575568288355494',
-    api_secret: '8hxJW5piPGcMLLJpVTca-9Ppu00'
+    cloud_name: process.env.CLOUDINARY_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 app.use(express.json());
 
-// Add a root route to handle GET requests to /
+// Root route to prevent "Cannot GET /" errors
 app.get('/', (req, res) => {
-    res.send('Server is active. Please use the /api/mint-candle endpoint to mint your NFT.');
+    res.send('Server is live and ready for minting requests.');
 });
 
 // Helper function: Smart word wrapping
@@ -37,15 +38,14 @@ function wrapText(text, maxChars) {
     return lines;
 }
 
+// Minting Endpoint
 app.post('/api/mint-candle', async (req, res) => {
     try {
         const { firstName, birthDate, deathDate, message } = req.body;
         
-        // Simple date formatting
         const bDate = birthDate ? birthDate.slice(0, 10) : "N/A";
         const dDate = deathDate ? deathDate.slice(0, 10) : "N/A";
 
-        // Generate smart-wrapped message lines (Max 10 lines)
         const charsPerLine = 28;
         const wrappedLines = wrapText(message, charsPerLine).slice(0, 10);
         
@@ -63,7 +63,6 @@ app.post('/api/mint-candle', async (req, res) => {
 
         const templatePath = path.join(__dirname, 'candle-template-blank.jpg');
         
-        // Create the SVG overlay
         const svgOverlay = `
             <svg width="832" height="1248" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -77,13 +76,11 @@ app.post('/api/mint-candle', async (req, res) => {
                 ${messageLines.join('')}
             </svg>`;
 
-        // Process the image with Sharp
         const buffer = await sharp(templatePath)
             .composite([{ input: Buffer.from(svgOverlay), top: 0, left: 0 }])
             .jpeg({ quality: 95 })
             .toBuffer();
 
-        // Upload directly to Cloudinary
         const result = await new Promise((resolve, reject) => {
             cloudinary.uploader.upload_stream({ resource_type: 'image' }, (error, result) => {
                 if (error) reject(error);
@@ -91,7 +88,6 @@ app.post('/api/mint-candle', async (req, res) => {
             }).end(buffer);
         });
 
-        // Send the secure URL back to your Wix site
         res.status(200).json({ success: true, imageUrl: result.secure_url });
     } catch (error) {
         console.error("Error:", error);
@@ -99,7 +95,7 @@ app.post('/api/mint-candle', async (req, res) => {
     }
 });
 
-// Use the dynamic port provided by Render, or 3000 locally
+// Listen on the port provided by Render
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
