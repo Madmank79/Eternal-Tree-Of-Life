@@ -13,6 +13,11 @@ cloudinary.config({
 
 app.use(express.json());
 
+// Add a root route to handle GET requests to /
+app.get('/', (req, res) => {
+    res.send('Server is active. Please use the /api/mint-candle endpoint to mint your NFT.');
+});
+
 // Helper function: Smart word wrapping
 function wrapText(text, maxChars) {
     if (!text) return [];
