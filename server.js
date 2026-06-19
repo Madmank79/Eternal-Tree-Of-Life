@@ -39,14 +39,14 @@ app.post('/api/mint-candle', async (req, res) => {
     const bDate = birthDate ? birthDate.slice(0, 10) : "N/A";
     const dDate = deathDate ? deathDate.slice(0, 10) : "N/A";
 
-    // Adjusted for smaller, more readable message text
-    const charsPerLine = 35; 
+    // Increased charsPerLine for wider text flow, reduced font-size to 20
+    const charsPerLine = 40; 
     const wrappedLines = wrapText(message, charsPerLine);
 
     let messagelines = [];
     for (let i = 0; i < wrappedLines.length; i++) {
         messagelines.push(`
-            <text x="416" y="${650 + (i * 40)}" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" fill="#1A1A1A">${wrappedLines[i]}</text>
+            <text x="416" y="${640 + (i * 30)}" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#1A1A1A">${wrappedLines[i]}</text>
         `);
     }
 
@@ -54,7 +54,7 @@ app.post('/api/mint-candle', async (req, res) => {
     const svgOverlay = `
     <svg width="832" height="1248" xmlns="http://www.w3.org/2000/svg">
         <text x="416" y="500" text-anchor="middle" font-family="Arial, sans-serif" font-size="70" fill="#1A1A1A">${firstName}</text>
-        <text x="416" y="570" text-anchor="middle" font-family="Arial, sans-serif" font-size="45" fill="#1A1A1A">${bDate} - ${dDate}</text>
+        <text x="416" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="#1A1A1A">${bDate} - ${dDate}</text>
         ${messagelines.join('')}
     </svg>`;
 
