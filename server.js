@@ -5,7 +5,6 @@ const path = require('path');
 const cloudinary = require('cloudinary').v2;
 
 // Configure Cloudinary using Environment Variables
-// Ensure these keys (CLOUDINARY_NAME, etc.) are set in your Render dashboard
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -14,7 +13,7 @@ cloudinary.config({
 
 app.use(express.json());
 
-// Root route to prevent "Cannot GET /" errors
+// Root route
 app.get('/', (req, res) => {
     res.send('Server is live and ready for minting requests.');
 });
@@ -40,42 +39,35 @@ function wrapText(text, maxChars) {
 
 // Minting Endpoint
 app.post('/api/mint-candle', async (req, res) => {
+    const { firstName, birthDate, deathDate, message } = req.body;
+    const bDate = birthDate ? birthDate.slice(0, 10) : "N/A";
+    const dDate = deathDate ? deathDate.slice(0, 10) : "N/A";
+
+    const charsPerLine = 28;
+    const wrappedLines = wrapText(message, charsPerLine);
+
+    let messagelines = [];
+    for (let i = 0; i < wrappedLines.length; i++) {
+        messagelines.push(`
+            <text x="416" y="${610 + (i * 50)}" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" fill="#1A1A1A" filter="url(#jar-curve)">${wrappedLines[i]}</text>
+        `);
+    }
+
+    const templatePath = path.join(__dirname, 'candle-template-blank.jpg');
+    const svgOverlay = `
+    <svg width="832" height="1248" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <filter id="jar-curve">
+                <feTurbulence type="fractalNoise" baseFrequency="0.01 0.0" numOctaves="1" result="noise"/>
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+            </filter>
+        </defs>
+        <text x="416" y="500" text-anchor="middle" font-family="Arial, sans-serif" font-size="70" fill="#1A1A1A">${firstName}</text>
+        <text x="416" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#1A1A1A">${bDate} - ${dDate}</text>
+        ${messagelines.join('')}
+    </svg>`;
+
     try {
-        const { firstName, birthDate, deathDate, message } = req.body;
-        
-        const bDate = birthDate ? birthDate.slice(0, 10) : "N/A";
-        const dDate = deathDate ? deathDate.slice(0, 10) : "N/A";
-
-        const charsPerLine = 28;
-        const wrappedLines = wrapText(message, charsPerLine).slice(0, 10);
-        
-        let messageLines = [];
-        for (let i = 0; i < wrappedLines.length; i++) {
-            messageLines.push(`
-                <text x="416" y="${610 + (i * 38)}"
-                text-anchor="middle"
-                font-family="Arial, sans-serif"
-                font-size="26"
-                fill="#1A1A1A"
-                filter="url(#jar-curve)">${wrappedLines[i]}</text>
-            `);
-        }
-
-        const templatePath = path.join(__dirname, 'candle-template-blank.jpg');
-        
-        const svgOverlay = `
-            <svg width="832" height="1248" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <filter id="jar-curve">
-                        <feTurbulence type="fractalNoise" baseFrequency="0.01 0.0" numOctaves="1" result="noise"/>
-                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
-                    </filter>
-                </defs>
-                <text x="416" y="500" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" fill="#1A1A1A">${firstName}</text>
-                <text x="416" y="555" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#1A1A1A">${bDate} - ${dDate}</text>
-                ${messageLines.join('')}
-            </svg>`;
-
         const buffer = await sharp(templatePath)
             .composite([{ input: Buffer.from(svgOverlay), top: 0, left: 0 }])
             .jpeg({ quality: 95 })
@@ -95,7 +87,6 @@ app.post('/api/mint-candle', async (req, res) => {
     }
 });
 
-// Listen on the port provided by Render
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
