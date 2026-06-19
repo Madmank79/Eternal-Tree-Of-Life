@@ -4,7 +4,6 @@ const sharp = require('sharp');
 const path = require('path');
 const cloudinary = require('cloudinary').v2;
 
-// Configure Cloudinary using Environment Variables
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -13,12 +12,10 @@ cloudinary.config({
 
 app.use(express.json());
 
-// Root route
 app.get('/', (req, res) => {
     res.send('Server is live and ready for minting requests.');
 });
 
-// Helper function: Smart word wrapping
 function wrapText(text, maxChars) {
     if (!text) return [];
     const words = text.split(' ');
@@ -37,31 +34,25 @@ function wrapText(text, maxChars) {
     return lines;
 }
 
-// Minting Endpoint
 app.post('/api/mint-candle', async (req, res) => {
     const { firstName, birthDate, deathDate, message } = req.body;
     const bDate = birthDate ? birthDate.slice(0, 10) : "N/A";
     const dDate = deathDate ? deathDate.slice(0, 10) : "N/A";
 
-    const charsPerLine = 20; // Reduced for larger font
+    // Adjusted for smaller, more readable message text
+    const charsPerLine = 35; 
     const wrappedLines = wrapText(message, charsPerLine);
 
     let messagelines = [];
     for (let i = 0; i < wrappedLines.length; i++) {
         messagelines.push(`
-            <text x="416" y="${650 + (i * 60)}" text-anchor="middle" font-family="Arial, sans-serif" font-size="50" fill="#1A1A1A" filter="url(#jar-curve)">${wrappedLines[i]}</text>
+            <text x="416" y="${650 + (i * 40)}" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" fill="#1A1A1A">${wrappedLines[i]}</text>
         `);
     }
 
     const templatePath = path.join(__dirname, 'candle-template-blank.jpg');
     const svgOverlay = `
     <svg width="832" height="1248" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <filter id="jar-curve">
-                <feTurbulence type="fractalNoise" baseFrequency="0.01 0.0" numOctaves="1" result="noise"/>
-                <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
-            </filter>
-        </defs>
         <text x="416" y="500" text-anchor="middle" font-family="Arial, sans-serif" font-size="70" fill="#1A1A1A">${firstName}</text>
         <text x="416" y="570" text-anchor="middle" font-family="Arial, sans-serif" font-size="45" fill="#1A1A1A">${bDate} - ${dDate}</text>
         ${messagelines.join('')}
