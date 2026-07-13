@@ -82,3 +82,16 @@ const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
+app.post('/mint', async (req, res) => {
+    try {
+        console.log("Data received from Wix:", req.body);
+        
+        // This is where your existing minting logic should go.
+        // For now, let's just send a success response to verify the link works:
+        res.json({ success: true, message: "Mint request received by Render!" });
+        
+    } catch (err) {
+        console.error("Minting error:", err);
+        res.status(500).json({ success: false, message: "Server error during minting" });
+    }
+});
