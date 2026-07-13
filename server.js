@@ -1,12 +1,12 @@
 const express = require('express');
-const cors = require('cors'); // Added for CORS
+const cors = require('cors'); // Required for CORS
 const app = express();
 const sharp = require('sharp');
 const path = require('path');
 const cloudinary = require('cloudinary').v2;
 
 // --- CORS CONFIGURATION ---
-// This allows your specific Wix site to send requests to this server
+// This bridge allows your Wix site to talk to your Render server
 app.use(cors({
     origin: "https://theeternaltreeoflife.wixsite.com"
 }));
@@ -21,7 +21,7 @@ cloudinary.config({
 // Middleware to parse JSON
 app.use(express.json());
 
-// Helper function
+// Helper function to wrap text for the image
 function wrapText(text, maxChars) {
     if (!text) return [];
     const words = text.split(' ');
@@ -39,11 +39,7 @@ function wrapText(text, maxChars) {
     return lines;
 }
 
-// Routes
-app.get('/', (req, res) => {
-    res.send('Server is live and ready for minting requests.');
-});
-
+// Route to receive the mint request
 app.post('/mint', async (req, res) => {
     try {
         console.log("Received data from Wix:", req.body);
@@ -86,3 +82,4 @@ app.post('/mint', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
