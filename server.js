@@ -4,26 +4,24 @@ const sharp = require('sharp');
 const path = require('path');
 const cloudinary = require('cloudinary').v2;
 
+// Cloudinary Configuration
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// Middleware to parse JSON
 app.use(express.json());
 
-app.get('/', (req, res) => {
-    res.send('Server is live and ready for minting requests.');
-});
-
+// Helper function
 function wrapText(text, maxChars) {
     if (!text) return [];
     const words = text.split(' ');
     let lines = [];
     let currentLine = words[0];
-
     for (let i = 1; i < words.length; i++) {
-        if ((currentLine + ' ' + words[i]).length <= maxChars) {
+        if ((currentLine + ' ' + words[i]).length < maxChars) {
             currentLine += ' ' + words[i];
         } else {
             lines.push(currentLine);
@@ -34,31 +32,32 @@ function wrapText(text, maxChars) {
     return lines;
 }
 
-app.post('/api/mint-candle', async (req, res) => {
-    const { firstName, birthDate, deathDate, message } = req.body;
-    const bDate = birthDate ? birthDate.slice(0, 10) : "N/A";
-    const dDate = deathDate ? deathDate.slice(0, 10) : "N/A";
+// Routes
+app.get('/', (req, res) => {
+    res.send('Server is live and ready for minting requests.');
+});
 
-    // Increased charsPerLine for wider text flow, reduced font-size to 20
-    const charsPerLine = 40; 
-    const wrappedLines = wrapText(message, charsPerLine);
-
-    let messagelines = [];
-    for (let i = 0; i < wrappedLines.length; i++) {
-        messagelines.push(`
-            <text x="416" y="${640 + (i * 30)}" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#1A1A1A">${wrappedLines[i]}</text>
-        `);
-    }
-
-    const templatePath = path.join(__dirname, 'candle-template-blank.jpg');
-    const svgOverlay = `
-    <svg width="832" height="1248" xmlns="http://www.w3.org/2000/svg">
-        <text x="416" y="500" text-anchor="middle" font-family="Arial, sans-serif" font-size="70" fill="#1A1A1A">${firstName}</text>
-        <text x="416" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="#1A1A1A">${bDate} - ${dDate}</text>
-        ${messagelines.join('')}
-    </svg>`;
-
+app.post('/mint', async (req, res) => {
     try {
+        console.log("Received data from Wix:", req.body);
+        const { firstName, birthDate, deathDate, message } = req.body;
+        const bDate = birthDate ? birthDate.slice(0, 10) : "N/A";
+        const dDate = deathDate ? deathDate.slice(0, 10) : "N/A";
+        
+        const wrappedLines = wrapText(message, 40);
+        let messageLines = [];
+        for (let i = 0; i < wrappedLines.length; i++) {
+            messageLines.push(`<text x="416" y="${640 + (i * 30)}" text-anchor="middle" font-family="Arial" font-size="20">${wrappedLines[i]}</text>`);
+        }
+
+        const templatePath = path.join(__dirname, 'candle-template-blank.jpg');
+        const svgOverlay = `
+            <svg width="832" height="1248" xmlns="http://www.w3.org/2000/svg">
+                <text x="416" y="500" text-anchor="middle" font-family="Arial" font-size="70">${firstName}</text>
+                <text x="416" y="560" text-anchor="middle" font-family="Arial" font-size="40">${bDate} - ${dDate}</text>
+                ${messageLines.join('')}
+            </svg>`;
+
         const buffer = await sharp(templatePath)
             .composite([{ input: Buffer.from(svgOverlay), top: 0, left: 0 }])
             .jpeg({ quality: 95 })
@@ -71,57 +70,12 @@ app.post('/api/mint-candle', async (req, res) => {
             }).end(buffer);
         });
 
-        res.status(200).json({ success: true, imageUrl: result.secure_url });
-    } catch (error) {
-        console.error("Error:", error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-});
-app.post('/mint', async (req, res) => {
-    try {
-        console.log("Data received from Wix:", req.body);
-        
-        // This is where your existing minting logic should go.
-        // For now, let's just send a success response to verify the link works:
-        res.json({ success: true, message: "Mint request received by Render!" });
-        
-    } catch (err) {
-        console.error("Minting error:", err);
-        res.status(500).json({ success: false, message: "Server error during minting" });
-    }
-});
-const express = require('express');
-const app = express();
-
-// Required to parse JSON from Wix
-app.use(express.json());
-
-// The /mint route that matches your Wix fetch URL
-app.post('/mint', async (req, res) => {
-    try {
-        console.log("Received data from Wix:", req.body);
-
-        // --- ADD YOUR CLOUDINARY/MINTING LOGIC HERE ---
-        // Example: const { firstName, message } = req.body;
-        // ... your processing logic ...
-
-        // Send confirmation back to Wix
-        res.json({ 
-            success: true, 
-            message: "Minting process initiated",
-            imageUrl: "YOUR_IMAGE_URL_FROM_CLOUDINARY" 
-        });
-        
+        res.json({ success: true, imageUrl: result.secure_url });
     } catch (err) {
         console.error("Backend error:", err);
-        res.status(500).json({ success: false, message: "Server error" });
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server live on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
