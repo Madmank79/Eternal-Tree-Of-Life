@@ -1,8 +1,15 @@
 const express = require('express');
+const cors = require('cors'); // Added for CORS
 const app = express();
 const sharp = require('sharp');
 const path = require('path');
 const cloudinary = require('cloudinary').v2;
+
+// --- CORS CONFIGURATION ---
+// This allows your specific Wix site to send requests to this server
+app.use(cors({
+    origin: "https://theeternaltreeoflife.wixsite.com"
+}));
 
 // Cloudinary Configuration
 cloudinary.config({
