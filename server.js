@@ -95,3 +95,33 @@ app.post('/mint', async (req, res) => {
         res.status(500).json({ success: false, message: "Server error during minting" });
     }
 });
+const express = require('express');
+const app = express();
+
+// Required to parse JSON from Wix
+app.use(express.json());
+
+// The /mint route that matches your Wix fetch URL
+app.post('/mint', async (req, res) => {
+    try {
+        console.log("Received data from Wix:", req.body);
+
+        // --- ADD YOUR CLOUDINARY/MINTING LOGIC HERE ---
+        // Example: const { firstName, message } = req.body;
+        // ... your processing logic ...
+
+        // Send confirmation back to Wix
+        res.json({ 
+            success: true, 
+            message: "Minting process initiated",
+            imageUrl: "YOUR_IMAGE_URL_FROM_CLOUDINARY" 
+        });
+        
+    } catch (err) {
+        console.error("Backend error:", err);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server live on port ${PORT}`));
